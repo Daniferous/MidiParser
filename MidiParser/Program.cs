@@ -77,9 +77,9 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
-                    //Insert logic to confirm whether to use 768 ppqb or Import MIDI TPQ
-                    int prctmp = 120; //Formula using 120 BPM: tpq * 4 * (prctmp/60)
-                    int outTPQ = 96 * 4 * (prctmp/60);
+                    //MIDI TPQ is 384, though is processed as TPH (Ticks per half-note)
+                    int prctmp = 120; //Formula using 120 BPM: TPQ * (prctmp/60)
+                    int outTPQ = 384 * (prctmp/60); //768 TPH
                     
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
                     tempoEvents.Add(new TempoEvent(60000000/prctmp, 0)); //Assumes Tempo is 120 BPM, converts to seconds at 120 BPM
@@ -118,6 +118,11 @@ namespace MidiParser
                     {
                         //Track Header
                         notes.Add(new AranaraN("TR",0,0,0,0,i,outTPQ));
+
+                        //Assume no tempo events in track 0. Default tempo is 120 (0x07A120 ms per beat)
+                        if (i == 0){
+                            notes.Add(new AranaraN("TE",0,0,0,0,500000,outTPQ));
+                        }
 
                         int currentTempoIndex = 0;
 

@@ -9,6 +9,9 @@
 *.user
 *.userosscache
 *.sln.docstates
+.rmv/
+MidiParser/bin/Debug
+MidiParser/bin/Old
 
 # Backups
 *.csbak
@@ -37,7 +40,7 @@ x86/
 [Ll]og/
 
 # Shortcuts
-*.lnk
+#*.lnk
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

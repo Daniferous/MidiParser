@@ -55,6 +55,26 @@ namespace MidiParser
                     hex_len = "";
                     break;
 
+                case "CC": //Control Change
+                    hex_type = "C";
+                    hex_note = hnote.ToString("X2"); //Control Change Parameter (Conveniently same range as note pitch)
+                    hex_vel = hvel.ToString("X2"); //Control Change Value
+                    hex_ch =  hch.ToString("X");
+                    hex_value = "";
+                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_len = "";
+                    break;
+
+                case "PB": //Bitch Pend
+                    hex_type = "B";
+                    hex_note = hnote.ToString("X4"); //Pitch Bend Value (0000 -> 3FFF)
+                    hex_vel = "";
+                    hex_ch =  hch.ToString("X");
+                    hex_value = "";
+                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_len = "";
+                    break;
+
                 default: //Assume Note
                     hex_type = "";
                     hex_note = hnote.ToString("X2"); 

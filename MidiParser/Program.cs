@@ -17,12 +17,13 @@ namespace MidiParser
         static void Main(string[] args)
         {
             //Iterate through all files dropped onto the program
+            Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n\nMIDIParser Faelei Mod\n");
             try
             {
                 switch (args.Length)
                 {
                     case 1:
-                        ConvertFile(args[0]);
+                        ConvertFile(args[0], 1);
                         break;
                     case 0:
                         while (true)
@@ -30,20 +31,21 @@ namespace MidiParser
                             Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):");
                             string s = Console.ReadLine();
                             if (s != "")
-                                ConvertFile(s);
+                                ConvertFile(s, 1);
                             else
                                 break;
                         }
                         break;
                     default:
-                        Console.WriteLine("Batch Convert function is partially supported.");
+                        Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n");
+                        Console.WriteLine("Batch Convert function is partially supported.\n");
                         //Console.ReadLine();
                         ConvertAllFiles(args);
                         break;
                 }
                 //Post Operation.
-                Console.WriteLine("Finished process.\nIf this window does not close automatically, press enter to end.");
-                //Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
+                Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n\nFinished process.\nIf this window does not close automatically, press enter to end.\n\n[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]");
+                Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
             }
             catch (Exception e)
             {
@@ -58,18 +60,18 @@ namespace MidiParser
             int count = 1;
             foreach (string file in files)
             {
-                ConvertFile(file);
-                Console.WriteLine($"Finished file {count++}");
+                ConvertFile(file, count);
+                count++;
             }
         }
 
-        private static string ConvertFile (string file)
+        private static string ConvertFile (string file, int fileCount)
         {
             //Make sure the file exists
             if (File.Exists(file))
             {
                 string path = file;
-                string output = Path.Combine(Path.GetDirectoryName(path), "!" + Path.GetFileNameWithoutExtension(path) + ".aramidi");
+                string output = Path.Combine(Path.GetDirectoryName(path), "!" + Path.GetFileNameWithoutExtension(path) + ".faelei");
                 MidiFile mid;
 
                 //If an error is thrown, notify user and continue looping
@@ -77,9 +79,23 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
+                    //Mod Alters Resolution to better increase compatibility.
                     //MIDI TPQ is 384, though is processed as TPH (Ticks per half-note)
-                    int prctmp = 120; //Formula using 120 BPM: TPQ * (prctmp/60)
-                    int outTPQ = 384 * (prctmp/60); //768 TPH
+                    int prctmp = 60; //Formula using 120 BPM: TPQ * (prctmp/60)
+                    int outTPQ = 384; //768 TPH
+                    //Default TPQ rule, TPQ divisible by 60 rounded up to 960, rest is rounded up to 768.
+                    int enable960TPQ = Convert.ToInt32(ticksPerQuarterNote % 60 == 0);
+                    outTPQ = enable960TPQ * 960 + (1 - enable960TPQ) * 768;
+                    //Special TPQ rule, for TPQs greater than 768, divisible by 128:
+                    if(ticksPerQuarterNote%128 == 0 && ticksPerQuarterNote>768){
+                        outTPQ = 1024;
+                    }
+
+                    //Console Separator
+                    Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n");
+                    
+                    //Counting Tracks, Notes, Tempo Events, Control Changes, Program Changes, Bitch Pends
+                    int trc = 0; int nc = 0; int tec = 0; int ccc = 0; int pcc = 0; int pbc = 0;
                     
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
                     tempoEvents.Add(new TempoEvent(60000000/prctmp, 0)); //Assumes Tempo is 120 BPM, converts to seconds at 120 BPM
@@ -105,23 +121,21 @@ namespace MidiParser
                         }
                         catch (Exception e)
                         {
-                            Console.WriteLine($"Error reading tempos:\n{e.Message}");
+                            Console.WriteLine($"[File {fileCount}] Error reading tempos:\n{e.Message}");
                         }
                     }
-
-                    //Create a list containing default Expression, Volume, and Sustain values. 18 Entries in case.
-                    int[] MIDIVol = Enumerable.Repeat(127, 16).ToArray();
-                    int[] MIDIExp = Enumerable.Repeat(127, 16).ToArray();
 
                     //Iterate through every note press in the file
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
                         //Track Header
                         notes.Add(new AranaraN("TR",0,0,0,0,i,outTPQ));
+                        trc++;
 
                         //Assume no tempo events in track 0. Default tempo is 120 (0x07A120 ms per beat)
                         if (i == 0){
                             notes.Add(new AranaraN("TE",0,0,0,0,500000,outTPQ));
+                            Console.WriteLine($"[File {fileCount}] Missing Tempos, added default Tempo.\n");
                         }
 
                         int currentTempoIndex = 0;
@@ -148,30 +162,20 @@ namespace MidiParser
                                 {
                                     case MidiCommandCode.ControlChange:
                                         ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
-                                        int MIDICCRawValue = short.Parse(midicc.ControllerValue.ToString());
-                                        int MIDICCChannel = short.Parse((midicc.Channel%16).ToString());
-                                        switch(midicc.Controller.ToString())
-                                        {
-                                            case "MainVolume":
-                                                MIDIVol[MIDICCChannel] = MIDICCRawValue;
-                                            break;
-                                            case "Expression":
-                                                MIDIExp[MIDICCChannel] = MIDICCRawValue;
-                                            break;
-                                            default:
-                                            break;
-                                        }
+                                        timeInSeconds = AranaraN.ToSeconds(midicc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+
+                                        //Add this control change
+                                        notes.Add(new AranaraN("CC",(int)midicc.Controller,(int)midicc.ControllerValue,midicc.Channel%16,timeInSeconds,0,outTPQ));
+                                        ccc++;
                                     break;
                                     case MidiCommandCode.PatchChange:
                                         PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
-                                        int MIDIPCRaw = ((short)midipc.Patch);
 
-                                        
                                         timeInSeconds = AranaraN.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                        lengthInSeconds = AranaraN.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote); //Not quite needed
                                         
                                         //Add this instrument change
-                                        notes.Add(new AranaraN("PC",MIDIPCRaw,0,midipc.Channel%16,timeInSeconds,0,outTPQ));
+                                        notes.Add(new AranaraN("PC",((short)midipc.Patch),0,midipc.Channel%16,timeInSeconds,0,outTPQ));
+                                        pcc++;
                                     break;
                                     case MidiCommandCode.NoteOn:
                                         NoteOnEvent note = midiEvent as NoteOnEvent;
@@ -183,18 +187,26 @@ namespace MidiParser
                                             lengthInSeconds = AranaraN.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                            
                                             //Add this note
-                                            notes.Add(new AranaraN("N",note.NoteNumber,Convert.ToInt32(note.Velocity * (MIDIVol[note.Channel%16] * MIDIExp[note.Channel%16]) / 16129),note.Channel%16,timeInSeconds,lengthInSeconds,outTPQ));
+                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,timeInSeconds,lengthInSeconds,outTPQ));
+                                            nc++; 
                                         }
                                     break;
                                     default:
                                         //Tempo Event Detection
-                                        if (midiEvent is TempoEvent)
+                                        if (midiEvent is TempoEvent tempo)
                                         {
-                                            TempoEvent tempo = midiEvent as TempoEvent;
                                             timeInSeconds = AranaraN.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                            lengthInSeconds = AranaraN.ToSeconds(0, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                             //Add Tempo Event
                                             notes.Add(new AranaraN("TE",0,0,0,timeInSeconds,60000000/tempo.Tempo,outTPQ));
+                                            tec++;
+                                        }
+
+                                        //Pitch Bend Event Detection
+                                        if (midiEvent is PitchWheelChangeEvent pitchBend)
+                                        {                                          
+                                            timeInSeconds = AranaraN.ToSeconds(pitchBend.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
+                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel,timeInSeconds,0,outTPQ));
+                                            pbc++;
                                         }
                                     break;
                                 }
@@ -210,7 +222,7 @@ namespace MidiParser
                     AranaraN[] events = notes.ToArray();
 
                     char separateChar = '|'; //Only used for initialising file header.
-                    string header = "[Aranara]█";
+                    string header = "[Faelei]█";
                     StringBuilder info = new StringBuilder($"{header}{(Path.GetFileNameWithoutExtension(path) + $"{":"}{outTPQ}").Replace(separateChar.ToString(), "")}{separateChar}");
                     
 
@@ -226,18 +238,20 @@ namespace MidiParser
                     }
                     //Write to a text file
                     File.WriteAllText(output, info.ToString());
-                    
+
+                    //Shows Conversion Statistics
+                    Console.WriteLine($"[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n\nOutput FaeleiMIDI Properties [File {fileCount}]\n\nName: {Path.GetFileNameWithoutExtension(path)}\nTracks: {trc}\nNotes: {nc}\nTempo Events: {tec}\nProgram Change Events: {pcc}\nControl Change Events: {ccc}\nPitch Bend Events: {pbc}\nTotal Events: {nc + tec + pcc + ccc + pbc}\nOriginal PPQ: {ticksPerQuarterNote}\nConverted PPQ: {outTPQ}.\n");
                     return info.ToString();
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Could not process file {file}\n{e.Message}\nPress enter to continue");
+                    Console.WriteLine($"[File {fileCount}] Could not process file {file}\n{e.Message}\nPress enter to continue");
                     Console.ReadLine();
                 }
             }
             else
             {
-                Console.WriteLine($"File {file} does not exist.\nPress enter to continue");
+                Console.WriteLine($"[File {fileCount}] File {file} does not exist.\nPress enter to continue");
                 Console.ReadLine();
             }
             return "";

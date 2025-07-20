@@ -43,7 +43,9 @@ This modded version supports Batch Modification. Dropping multiple files will ou
 
 You may need to install DotNet Core Runtime: https://dotnet.microsoft.com/download/dotnet-core/thank-you/runtime-desktop-3.1.10-windows-x64-installer
 
+Also, if you have any inquiries regarding this modification, feel free to contact me through my email, my [Scratch Profile](https://scratch.mit.edu/users/OjasnGamer101/), and the [Daniferousity Discord Server](https://discord.gg/kTD8y6YDjJ). 
+
 ## Credits
-FlynnD273 for the original code.
+[FlynnD273](https://github.com/FlynnD273/MidiParser) for the original code.
 
 Daniferous for the tempo events, MIDI channel,  Volume and Expresion Control Change implementation, and Instrument Integration.

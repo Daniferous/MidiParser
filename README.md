@@ -5,7 +5,11 @@ This modded variant is intended for usage for the following Scratch projects:
 1. [Pen-Based Aranara MIDI Renderer-Faelei Mod](https://daniferous.github.io/aranara-midi-player-sb3/faelei/AMRT%201.5%20Faelei%20MOD%20R3.html)
 
 ## About Mod
-This program differs from the regular Aranara Modification. This one adds support for Control Changes and Pitch Bends, adding to the existing support for Program Change (Instrument) in Base Aranara/AraMIDI Format.
+Initially, this program intended to add support for tempo events as the original code, made by [K9ShyGuy](https://scratch.mit.edu/users/K9shyguy/), did not include tempo changes. 
+
+After multiple iterations in the past few years, the AraMIDI format, [which you can learn more about by clicking here](https://daniferous.github.io/aranara-midi-player-sb3/versions), now includes limited support for Control Change Events (such as Volume and Expression events), and full support for Program Change Events (or Instruments). However, do know that the Instruments only involve the standard Scratch library.
+
+This is the "upgraded" version of this format, [known as the Faelei MIDI Format](https://github.com/Daniferous/MidiParser/tree/Faelei), which adds full Control Change and Pitch Bend Support. This is only made possible using a plug-in made by [hevean](https://scratch.mit.edu/users/hevean_3/) which allows Scratch Projects to have MIDI Synth Support.
 
 ## How to use
 The compiled executable can be found [here](../MidiParser/bin/Release/netcoreapp3.1/publish):
@@ -24,8 +28,10 @@ AraMIDI Format will continue to be supported. This is because the Faelei MIDI Fo
 Also, if you have any inquiries regarding this modification, feel free to contact me through my email, my [Scratch Profile](https://scratch.mit.edu/users/OjasnGamer101/), and the [Daniferousity Discord Server](https://discord.gg/kTD8y6YDjJ). 
 
 ## Credits
-FlynnD273 for the original code.
+[FlynnD273](https://github.com/FlynnD273/MidiParser) for the original code.
 
 Daniferous for the tempo events, MIDI channel,  Volume and Expresion Control Change implementation, and Instrument Integration.
 
 Also Daniferous for the addition of full Control Change and Pitch Bend Support.
+
+I'd like to include [hevean](https://scratch.mit.edu/users/hevean_3/) for the development of the MIDI plugin which is how this project became possible.

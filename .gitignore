@@ -26,6 +26,8 @@ MidiParser/bin/Old
 # Build results
 [Dd]ebug/
 Debug/netcoreapp3.1/
+Debug/netcoreapp3.1/MidiParser.deps.json
+Debug/netcoreapp3.1/MidiParser.exe
 *.dev.json
 #[Dd]ebugPublic/
 #[Rr]elease/

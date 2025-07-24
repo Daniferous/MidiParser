@@ -86,8 +86,8 @@ namespace MidiParser
                     //Default TPQ rule, TPQ divisible by 60 rounded up to 960, rest is rounded up to 768.
                     int enable960TPQ = Convert.ToInt32(ticksPerQuarterNote % 60 == 0);
                     outTPQ = enable960TPQ * 960 + (1 - enable960TPQ) * 768;
-                    //Special TPQ rule, for TPQs greater than 768, divisible by 128:
-                    if(ticksPerQuarterNote%128 == 0 && ticksPerQuarterNote>768){
+                    //Special TPQ rule, for TPQs greater than 768, divisible by 128, as long as it does not conflict with the prior rule:
+                    if(ticksPerQuarterNote%128 == 0 && ticksPerQuarterNote>768 && enable960TPQ != 1){
                         outTPQ = 1024;
                     }
 

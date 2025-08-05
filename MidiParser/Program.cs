@@ -28,7 +28,7 @@ namespace MidiParser
                     case 0:
                         while (true)
                         {
-                            Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):");
+                            Console.WriteLine("Paste file path to convert here (Enter a blank line to quit):\n");
                             string s = Console.ReadLine();
                             if (s != "")
                                 ConvertFile(s, 1);
@@ -38,18 +38,18 @@ namespace MidiParser
                         break;
                     default:
                         Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n");
-                        Console.WriteLine("Batch Convert function is partially supported.\n");
+                        Console.WriteLine("Batch Conversion Ongoing...\n");
                         //Console.ReadLine();
                         ConvertAllFiles(args);
                         break;
                 }
                 //Post Operation.
-                Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n\nFinished process.\nIf this window does not close automatically, press enter to end.\n\n[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]");
+                Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n\nConversion Finished.\nYou can now close this window by pressing [ENTER] to end.\n\n[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]");
                 Console.ReadLine(); //Leaving this here for the option to have the window not close automatically.
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Exception was thrown:\n{e.Message}\n\nPress enter to quit.");
+                Console.WriteLine($"Exception was thrown:\n{e.Message}\n\nPress [ENTER] to quit.");
                 Console.ReadLine();
             }
         }
@@ -79,17 +79,17 @@ namespace MidiParser
                 {
                     mid = new MidiFile(path);
                     int ticksPerQuarterNote = mid.DeltaTicksPerQuarterNote;
+
                     //Mod Alters Resolution to better increase compatibility.
-                    //MIDI TPQ is 384, though is processed as TPH (Ticks per half-note)
-                    int prctmp = 60; //Formula using 120 BPM: TPQ * (prctmp/60)
-                    int outTPQ = 384; //768 TPH
-                    //Default TPQ rule, TPQ divisible by 60 rounded up to 960, rest is rounded up to 768.
-                    int enable960TPQ = Convert.ToInt32(ticksPerQuarterNote % 60 == 0);
-                    outTPQ = enable960TPQ * 960 + (1 - enable960TPQ) * 768;
-                    //Special TPQ rule, for TPQs greater than 768, divisible by 128, as long as it does not conflict with the prior rule:
-                    if(ticksPerQuarterNote%128 == 0 && ticksPerQuarterNote>768 && enable960TPQ != 1){
-                        outTPQ = 1024;
+                    //Newer TPQ Rules (Simplified)
+                    int outTPQ = ticksPerQuarterNote; //MIDI PPQ now conforms to the original PPQ.
+
+                    //Max TPQ of 1536: TPQ will divide by 2 repeatedly until it is at or under 1536, with no loops involved.
+                    if (ticksPerQuarterNote > 1536)
+                    {
+                        outTPQ = (int)Math.Round((double)ticksPerQuarterNote / Math.Pow(2,(int)Math.Ceiling(Math.Log((double)ticksPerQuarterNote / 1536, 2))));
                     }
+
 
                     //Console Separator
                     Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n");
@@ -98,7 +98,7 @@ namespace MidiParser
                     int trc = 0; int nc = 0; int tec = 0; int ccc = 0; int pcc = 0; int pbc = 0;
                     
                     List<TempoEvent> tempoEvents = new List<TempoEvent>();
-                    tempoEvents.Add(new TempoEvent(60000000/prctmp, 0)); //Assumes Tempo is 120 BPM, converts to seconds at 120 BPM
+                    tempoEvents.Add(new TempoEvent(1000000, 0)); //60 BPM
 
                     MidiEvent[][] midiEvents = new MidiEvent[mid.Events.Count()][];
 
@@ -135,7 +135,7 @@ namespace MidiParser
                         //Assume no tempo events in track 0. Default tempo is 120 (0x07A120 ms per beat)
                         if (i == 0){
                             notes.Add(new AranaraN("TE",0,0,0,0,500000,outTPQ));
-                            Console.WriteLine($"[File {fileCount}] Missing Tempos, added default Tempo.\n");
+                            Console.WriteLine($"[File {fileCount}] Added default Tempo (120 BPM).\n");
                         }
 
                         int currentTempoIndex = 0;
@@ -245,13 +245,13 @@ namespace MidiParser
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"[File {fileCount}] Could not process file {file}\n{e.Message}\nPress enter to continue");
+                    Console.WriteLine($"[File {fileCount}] Could not process file {file} and it has been skipped.\n{e.Message}\nPress [ENTER] to continue.");
                     Console.ReadLine();
                 }
             }
             else
             {
-                Console.WriteLine($"[File {fileCount}] File {file} does not exist.\nPress enter to continue");
+                Console.WriteLine($"[File {fileCount}] File {file} does not exist.\nPress [ENTER] to dismiss.");
                 Console.ReadLine();
             }
             return "";

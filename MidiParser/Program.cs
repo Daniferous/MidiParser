@@ -205,7 +205,7 @@ namespace MidiParser
                                         if (midiEvent is PitchWheelChangeEvent pitchBend)
                                         {                                          
                                             timeInSeconds = AranaraN.ToSeconds(pitchBend.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel,timeInSeconds,0,outTPQ));
+                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel%16,timeInSeconds,0,outTPQ));
                                             pbc++;
                                         }
                                     break;

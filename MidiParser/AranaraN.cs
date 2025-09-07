@@ -3,6 +3,26 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+/**--**--**--**--**--**--**--**--**--**--**--**--**
+     Friendly Reminder from Daniferous/Faelei
+
+  You may modify or edit this code as you please,
+  but please consider crediting both Me (for the
+AranaraN Module) and FlynnDuniho (for the original
+ "MidiParser" code). Thank you and happy modding!
+
+    -+- -+- -+- -+- -+- -+- -+- -+- -+- -+- -+-
+                      Updates
+    -+- -+- -+- -+- -+- -+- -+- -+- -+- -+- -+-
+
+    2025-09-07
+    Cleaned up a lot of unnecessary code, such
+    as the now-defunct "ToSeconds" function as
+    it can be simply bypassed by using the raw
+    AbsoluteTime parameter for any NAudio event
+
+**--**--**--**--**--**--**--**--**--**--**--**--**/
+
 namespace MidiParser
 {
     class AranaraN
@@ -22,7 +42,7 @@ namespace MidiParser
         private string ahex_type;
         public string hex_type {get => ahex_type; private set => ahex_type = value;}
 
-        public AranaraN (string htype, int hnote, int hvel, int hch, double htime, double hlen, int htpqn)
+        public AranaraN (string htype, int hnote, int hvel, int hch, long htime, long hlen)
         {
             switch (htype){ //Len parameter for function AranaraN used for values for non-note events.
                 case "TR": //Track
@@ -30,7 +50,7 @@ namespace MidiParser
                     hex_note = ""; //Unused Parameter for Track Headers
                     hex_vel = "";
                     hex_ch = "";
-                    hex_value = Convert.ToInt32(hlen).ToString("X") + "|"; 
+                    hex_value = hlen.ToString("X") + "|"; 
                     hex_time = "";
                     hex_len = "";
                     break;
@@ -40,8 +60,8 @@ namespace MidiParser
                     hex_note = ""; //Unused Parameter for Tempo Events
                     hex_vel = "";
                     hex_ch = "";
-                    hex_value = Convert.ToInt32(hlen).ToString("X") + "|"; 
-                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_value = hlen.ToString("X") + "|"; 
+                    hex_time = htime.ToString("X") + "|";
                     hex_len = "";
                     break;
 
@@ -51,7 +71,7 @@ namespace MidiParser
                     hex_vel = "";
                     hex_ch =  hch.ToString("X");
                     hex_value = "";
-                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_time = htime.ToString("X") + "|";
                     hex_len = "";
                     break;
 
@@ -61,7 +81,7 @@ namespace MidiParser
                     hex_vel = hvel.ToString("X2"); //Control Change Value
                     hex_ch =  hch.ToString("X");
                     hex_value = "";
-                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_time = htime.ToString("X") + "|";
                     hex_len = "";
                     break;
 
@@ -71,7 +91,7 @@ namespace MidiParser
                     hex_vel = "";
                     hex_ch =  hch.ToString("X");
                     hex_value = "";
-                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
+                    hex_time = htime.ToString("X") + "|";
                     hex_len = "";
                     break;
 
@@ -81,15 +101,10 @@ namespace MidiParser
                     hex_vel = hvel.ToString("X2");
                     hex_ch = hch.ToString("X");
                     hex_value = ""; //Unused Parameter for Notes
-                    hex_time = Convert.ToInt32(Math.Round(htime*htpqn,0)).ToString("X") + "|";
-                    hex_len = Convert.ToInt32(Math.Round(hlen*htpqn,0)).ToString("X") + "|";
+                    hex_time = htime.ToString("X") + "|";
+                    hex_len = hlen.ToString("X") + "|";
                     break;
             }
-        }
-
-        public static double ToSeconds (long time, TempoEvent lastTempoEvent, int ticksPerQuarterNote)
-        {
-            return (double)(((double)(time - lastTempoEvent.AbsoluteTime) / ticksPerQuarterNote) * lastTempoEvent.MicrosecondsPerQuarterNote + lastTempoEvent.AbsoluteTime) / 1000000;
         }
     }
 }

@@ -129,12 +129,12 @@ namespace MidiParser
                     for (int i = 0; i < midiEvents.Length; i++)
                     {
                         //Track Header
-                        notes.Add(new AranaraN("TR",0,0,0,0,i,outTPQ));
+                        notes.Add(new AranaraN("TR",0,0,0,0,i));
                         trc++;
 
                         //Assume no tempo events in track 0. Default tempo is 120 (0x07A120 ms per beat)
                         if (i == 0){
-                            notes.Add(new AranaraN("TE",0,0,0,0,500000,outTPQ));
+                            notes.Add(new AranaraN("TE",0,0,0,0,500000));
                             Console.WriteLine($"[File {fileCount}] Added default Tempo (120 BPM).\n");
                         }
 
@@ -156,25 +156,19 @@ namespace MidiParser
                                 }
 
                                 //Test: Switch Cases
-                                double timeInSeconds;
-                                double lengthInSeconds;
+                                
                                 switch(midiEvent.CommandCode)
                                 {
                                     case MidiCommandCode.ControlChange:
                                         ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
-                                        timeInSeconds = AranaraN.ToSeconds(midicc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-
                                         //Add this control change
-                                        notes.Add(new AranaraN("CC",(int)midicc.Controller,(int)midicc.ControllerValue,midicc.Channel%16,timeInSeconds,0,outTPQ));
+                                        notes.Add(new AranaraN("CC",(int)midicc.Controller,(int)midicc.ControllerValue,midicc.Channel%16,midicc.AbsoluteTime,0));
                                         ccc++;
                                     break;
                                     case MidiCommandCode.PatchChange:
                                         PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
-
-                                        timeInSeconds = AranaraN.ToSeconds(midipc.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                        
                                         //Add this instrument change
-                                        notes.Add(new AranaraN("PC",((short)midipc.Patch),0,midipc.Channel%16,timeInSeconds,0,outTPQ));
+                                        notes.Add(new AranaraN("PC",((short)midipc.Patch),0,midipc.Channel%16,midipc.AbsoluteTime,0));
                                         pcc++;
                                     break;
                                     case MidiCommandCode.NoteOn:
@@ -183,11 +177,8 @@ namespace MidiParser
                                         //If not an off note
                                         if (note.Velocity != 0)
                                         {
-                                            timeInSeconds = AranaraN.ToSeconds(note.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                            lengthInSeconds = AranaraN.ToSeconds(note.NoteLength, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                           
                                             //Add this note
-                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,timeInSeconds,lengthInSeconds,outTPQ));
+                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,note.AbsoluteTime,note.NoteLength));
                                             nc++; 
                                         }
                                     break;
@@ -195,17 +186,15 @@ namespace MidiParser
                                         //Tempo Event Detection
                                         if (midiEvent is TempoEvent tempo)
                                         {
-                                            timeInSeconds = AranaraN.ToSeconds(tempo.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
                                             //Add Tempo Event
-                                            notes.Add(new AranaraN("TE",0,0,0,timeInSeconds,60000000/tempo.Tempo,outTPQ));
+                                            notes.Add(new AranaraN("TE",0,0,0,tempo.AbsoluteTime,Convert.ToInt32(60000000/tempo.Tempo)));
                                             tec++;
                                         }
 
                                         //Pitch Bend Event Detection
                                         if (midiEvent is PitchWheelChangeEvent pitchBend)
                                         {                                          
-                                            timeInSeconds = AranaraN.ToSeconds(pitchBend.AbsoluteTime, tempoEvents[currentTempoIndex], ticksPerQuarterNote);
-                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel%16,timeInSeconds,0,outTPQ));
+                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel%16,pitchBend.AbsoluteTime,0));
                                             pbc++;
                                         }
                                     break;

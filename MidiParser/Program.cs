@@ -89,7 +89,9 @@ namespace MidiParser
                     {
                         outTPQ = (int)Math.Round((double)ticksPerQuarterNote / Math.Pow(2,(int)Math.Ceiling(Math.Log((double)ticksPerQuarterNote / 1536, 2))));
                     }
-
+                    //OutTPQ does not sync with MIDIs of higher resolution.
+                    bool syncedTPQ = (ticksPerQuarterNote == outTPQ);
+                    double correctTime = ((double)outTPQ/(double)ticksPerQuarterNote);
 
                     //Console Separator
                     Console.WriteLine("[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]=-=-=-=-=-=-=-=[]\n");
@@ -156,19 +158,31 @@ namespace MidiParser
                                 }
 
                                 //Test: Switch Cases
-                                
+                                long eventTime = 0;
+                                long eventLength = 0;
+
                                 switch(midiEvent.CommandCode)
                                 {
                                     case MidiCommandCode.ControlChange:
                                         ControlChangeEvent midicc = midiEvent as ControlChangeEvent;
                                         //Add this control change
-                                        notes.Add(new AranaraN("CC",(int)midicc.Controller,(int)midicc.ControllerValue,midicc.Channel%16,midicc.AbsoluteTime,0));
+                                        eventTime = midicc.AbsoluteTime;
+                                        if (!syncedTPQ)
+                                        {
+                                            eventTime = (int)Math.Round((double)midicc.AbsoluteTime*correctTime);
+                                        }
+                                        notes.Add(new AranaraN("CC",(int)midicc.Controller,(int)midicc.ControllerValue,midicc.Channel%16,eventTime,0));
                                         ccc++;
                                     break;
                                     case MidiCommandCode.PatchChange:
                                         PatchChangeEvent midipc = midiEvent as PatchChangeEvent;
                                         //Add this instrument change
-                                        notes.Add(new AranaraN("PC",((short)midipc.Patch),0,midipc.Channel%16,midipc.AbsoluteTime,0));
+                                        eventTime = midipc.AbsoluteTime;
+                                        if (!syncedTPQ)
+                                        {
+                                            eventTime = (int)Math.Round((double)midipc.AbsoluteTime*correctTime);
+                                        }
+                                        notes.Add(new AranaraN("PC",((short)midipc.Patch),0,midipc.Channel%16,eventTime,0));
                                         pcc++;
                                     break;
                                     case MidiCommandCode.NoteOn:
@@ -178,7 +192,12 @@ namespace MidiParser
                                         if (note.Velocity != 0)
                                         {
                                             //Add this note
-                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,note.AbsoluteTime,note.NoteLength));
+                                            eventTime = note.AbsoluteTime;
+                                            if (!syncedTPQ)
+                                            {
+                                                eventTime = (int)Math.Round((double)note.AbsoluteTime*correctTime);
+                                            }
+                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,eventTime,note.NoteLength));
                                             nc++; 
                                         }
                                     break;
@@ -187,14 +206,24 @@ namespace MidiParser
                                         if (midiEvent is TempoEvent tempo)
                                         {
                                             //Add Tempo Event
-                                            notes.Add(new AranaraN("TE",0,0,0,tempo.AbsoluteTime,Convert.ToInt32(60000000/tempo.Tempo)));
+                                            eventTime = tempo.AbsoluteTime;
+                                            if (!syncedTPQ)
+                                            {
+                                                eventTime = (int)Math.Round((double)tempo.AbsoluteTime*correctTime);
+                                            }
+                                            notes.Add(new AranaraN("TE",0,0,0,eventTime,Convert.ToInt32(60000000/tempo.Tempo)));
                                             tec++;
                                         }
 
                                         //Pitch Bend Event Detection
                                         if (midiEvent is PitchWheelChangeEvent pitchBend)
-                                        {                                          
-                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel%16,pitchBend.AbsoluteTime,0));
+                                        {   
+                                            eventTime = pitchBend.AbsoluteTime;
+                                            if (!syncedTPQ)
+                                            {
+                                                eventTime = (int)Math.Round((double)pitchBend.AbsoluteTime*correctTime);
+                                            }                                       
+                                            notes.Add(new AranaraN("PB",(int)pitchBend.Pitch,0,pitchBend.Channel%16,eventTime,0));
                                             pbc++;
                                         }
                                     break;

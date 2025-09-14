@@ -193,11 +193,13 @@ namespace MidiParser
                                         {
                                             //Add this note
                                             eventTime = note.AbsoluteTime;
+                                            eventLength = note.NoteLength;
                                             if (!syncedTPQ)
                                             {
                                                 eventTime = (int)Math.Round((double)note.AbsoluteTime*correctTime);
+                                                eventLength = (int)Math.Round((double)note.NoteLength*correctTime);
                                             }
-                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,eventTime,note.NoteLength));
+                                            notes.Add(new AranaraN("N",note.NoteNumber,(int)note.Velocity,note.Channel%16,eventTime,eventLength));
                                             nc++; 
                                         }
                                     break;
